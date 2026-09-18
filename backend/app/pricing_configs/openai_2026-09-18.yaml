@@ -1,0 +1,33 @@
+# OpenAI model pricing snapshot -- verified via public pricing aggregators on
+# 2026-09-18 (OpenAI does not publish a stable machine-readable pricing feed).
+# Re-verify against https://developers.openai.com/api/docs/pricing before
+# trusting this for real billing, and add a new dated file (never edit an
+# already-loaded one) when prices change.
+provider_code: openai
+source: config_file:openai_2026-09-18.yaml
+effective_from: 2026-09-18
+rates:
+  - sku_code: gpt-6-astra-input-tokens
+    unit: per_1m_tokens
+    rate_amount: 10.00
+  - sku_code: gpt-6-astra-output-tokens
+    unit: per_1m_tokens
+    rate_amount: 50.00
+  - sku_code: gpt-5.6-sol-input-tokens
+    unit: per_1m_tokens
+    rate_amount: 4.00
+  - sku_code: gpt-5.6-sol-output-tokens
+    unit: per_1m_tokens
+    rate_amount: 20.00
+  - sku_code: gpt-5.6-terra-input-tokens
+    unit: per_1m_tokens
+    rate_amount: 2.00
+  - sku_code: gpt-5.6-terra-output-tokens
+    unit: per_1m_tokens
+    rate_amount: 12.00
+  - sku_code: gpt-5.6-luna-input-tokens
+    unit: per_1m_tokens
+    rate_amount: 0.20
+  - sku_code: gpt-5.6-luna-output-tokens
+    unit: per_1m_tokens
+    rate_amount: 1.20

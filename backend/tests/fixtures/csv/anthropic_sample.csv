@@ -1,0 +1,4 @@
+provider_code,sku_code,quantity,unit,period_start,period_end,department_code,tag_value
+anthropic,claude-sonnet-input-tokens,2000000,tokens,2026-01-05,2026-01-05,ENG,proj-alpha
+anthropic,claude-sonnet-output-tokens,500000,tokens,2026-01-05,2026-01-05,ENG,proj-alpha
+anthropic,claude-sonnet-input-tokens,1000000,tokens,2026-01-12,2026-01-12,MKT,proj-beta

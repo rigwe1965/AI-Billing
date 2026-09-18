@@ -1,0 +1,6 @@
+provider_code,sku_code,quantity,unit,period_start,period_end,department_code
+anthropic,claude-sonnet-input-tokens,2000000,tokens,2026-01-05,2026-01-05,ENG
+anthropic,claude-sonnet-input-tokens,1500000,tokens,2026-02-05,2026-02-05,ENG
+openai,gpt-5-input-tokens,800000,tokens,2026-01-10,2026-01-10,MKT
+openai,gpt-5-input-tokens,1200000,tokens,2026-02-10,2026-02-10,MKT
+anthropic,claude-sonnet-input-tokens,500000,tokens,2026-02-12,2026-02-12,SUP

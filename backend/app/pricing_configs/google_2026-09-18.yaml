@@ -1,0 +1,24 @@
+# Google Gemini model pricing snapshot -- verified via public pricing
+# aggregators on 2026-09-18. Gemini 3 Pro is context-tiered ($2/$12 per 1M
+# tokens up to 200k context, $4/$18 beyond) -- this snapshot only covers the
+# <=200k tier since pricing_rates has no per-request context-length dimension
+# yet; usage beyond 200k context will be underpriced until that's modeled.
+# Re-verify against Google's live Gemini API pricing page before trusting
+# this for real billing, and add a new dated file (never edit an
+# already-loaded one) when prices change.
+provider_code: google
+source: config_file:google_2026-09-18.yaml
+effective_from: 2026-09-18
+rates:
+  - sku_code: gemini-3-pro-input-tokens
+    unit: per_1m_tokens
+    rate_amount: 2.00
+  - sku_code: gemini-3-pro-output-tokens
+    unit: per_1m_tokens
+    rate_amount: 12.00
+  - sku_code: gemini-3.8-flash-input-tokens
+    unit: per_1m_tokens
+    rate_amount: 0.75
+  - sku_code: gemini-3.8-flash-output-tokens
+    unit: per_1m_tokens
+    rate_amount: 3.75

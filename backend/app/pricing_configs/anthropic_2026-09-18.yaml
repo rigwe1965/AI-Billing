@@ -1,0 +1,33 @@
+# Anthropic model pricing snapshot -- verified against
+# https://platform.claude.com/docs/en/about-claude/pricing on 2026-09-18.
+# Prices change over time; re-verify against the live pricing page before
+# trusting this for real billing, and add a new dated file (never edit an
+# already-loaded one) when prices change.
+provider_code: anthropic
+source: config_file:anthropic_2026-09-18.yaml
+effective_from: 2026-09-18
+rates:
+  - sku_code: claude-opus-5-input-tokens
+    unit: per_1m_tokens
+    rate_amount: 5.00
+  - sku_code: claude-opus-5-output-tokens
+    unit: per_1m_tokens
+    rate_amount: 25.00
+  - sku_code: claude-sonnet-5-input-tokens
+    unit: per_1m_tokens
+    rate_amount: 2.00
+  - sku_code: claude-sonnet-5-output-tokens
+    unit: per_1m_tokens
+    rate_amount: 10.00
+  - sku_code: claude-haiku-4-5-input-tokens
+    unit: per_1m_tokens
+    rate_amount: 1.00
+  - sku_code: claude-haiku-4-5-output-tokens
+    unit: per_1m_tokens
+    rate_amount: 5.00
+  - sku_code: claude-fable-5-1-input-tokens
+    unit: per_1m_tokens
+    rate_amount: 10.00
+  - sku_code: claude-fable-5-1-output-tokens
+    unit: per_1m_tokens
+    rate_amount: 50.00

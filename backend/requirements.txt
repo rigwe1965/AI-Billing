@@ -1,0 +1,20 @@
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+sqlalchemy==2.0.54
+alembic==1.20.0
+pydantic==2.13.5
+pydantic-settings==2.15.0
+python-multipart==0.0.32
+passlib==1.7.4
+bcrypt==4.3.0  # pinned <5: passlib 1.7.4 breaks on bcrypt's __about__ removal
+python-jose[cryptography]==3.5.0
+openpyxl==3.1.5
+reportlab==5.0.1
+apscheduler==3.11.3
+pytest==9.1.1
+httpx==0.28.1
+email-validator==2.3.0
+respx==0.23.1
+google-cloud-bigquery==3.45.2
+pypdf==6.19.0
+pyyaml==6.0.2  # for load_pricing_configs.py
