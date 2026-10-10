@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     # default can never be used to forge an admin token.
     secret_key: str = ""
     access_token_expire_minutes: int = 60 * 12
+    # Set COOKIE_SECURE=true when serving over HTTPS so the session cookie is
+    # never sent over plain HTTP. Left off by default for local http:// dev.
+    cookie_secure: bool = False
+    # Set ENABLE_DOCS=false in production to hide /docs, /redoc and /openapi.json.
+    enable_docs: bool = True
 
     # Provider connector credentials -- all optional; a connector whose
     # credentials are unset reports itself unavailable via capabilities()

@@ -26,15 +26,19 @@ def verify_dummy_password(plain_password: str) -> None:
     _pwd_context.verify(plain_password, _DUMMY_HASH)
 
 
-def create_access_token(subject: str) -> str:
+def create_access_token(subject: str, token_version: int = 0) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
-    payload = {"sub": subject, "exp": expire}
+    payload = {"sub": subject, "exp": expire, "tv": token_version}
     return jwt.encode(payload, settings.secret_key, algorithm=ALGORITHM)
 
 
-def decode_access_token(token: str) -> str | None:
+def decode_access_token(token: str) -> tuple[str, int] | None:
+    """Returns (email, token_version) for a valid token, else None."""
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
     except jwt.PyJWTError:
         return None
-    return payload.get("sub")
+    sub, tv = payload.get("sub"), payload.get("tv")
+    if not isinstance(sub, str) or not isinstance(tv, int):
+        return None
+    return sub, tv

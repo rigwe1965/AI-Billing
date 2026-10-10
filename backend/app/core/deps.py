@@ -17,12 +17,13 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
         if auth_header.startswith("Bearer "):
             token = auth_header.removeprefix("Bearer ").strip()
 
-    email = decode_access_token(token) if token else None
-    if not email:
+    claims = decode_access_token(token) if token else None
+    if not claims:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
+    email, token_version = claims
 
     user = db.query(User).filter(User.email == email, User.is_active.is_(True)).first()
-    if user is None:
+    if user is None or user.token_version != token_version:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
     return user
 

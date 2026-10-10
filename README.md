@@ -22,7 +22,9 @@ uvicorn app.main:app --reload --port 8000
 
 The seed script creates `admin@ai-billing.app` (override with `ADMIN_INITIAL_EMAIL` /
 `ADMIN_INITIAL_PASSWORD`) and, if no password is given, prints a random one **once**.
-Set `SECRET_KEY` (32+ chars) in `backend/.env` for any real deployment. Then create
+Set `SECRET_KEY` (32+ chars) in `backend/.env` for any real deployment, and when serving
+over HTTPS also set `COOKIE_SECURE=true` and `ENABLE_DOCS=false`. Run `alembic upgrade head`
+after pulling schema changes. Then create
 real users via `POST /api/users` (admin_finance only).
 
 ## Auth

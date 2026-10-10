@@ -267,3 +267,24 @@ def test_excel_export_escapes_formula_cells():
     assert _cell("=HYPERLINK(\"http://evil\")") == "'=HYPERLINK(\"http://evil\")"
     assert _cell("@SUM(1)") == "'@SUM(1)"
     assert _cell("claude-sonnet") == "claude-sonnet"
+
+
+def test_logout_revokes_the_token_server_side(client):
+    login(client, "englead@test-org.com", "engpass123")
+    stolen = client.cookies.get("access_token")
+    assert client.get("/api/auth/me", headers={"Authorization": f"Bearer {stolen}"}).status_code == 200
+    client.post("/api/auth/logout")
+    client.cookies.clear()
+    assert client.get("/api/auth/me", headers={"Authorization": f"Bearer {stolen}"}).status_code == 401
+
+
+def test_change_password_revokes_other_sessions_but_keeps_current(client):
+    login(client, "englead@test-org.com", "engpass123")
+    old_token = client.cookies.get("access_token")
+    client.post(
+        "/api/auth/change-password",
+        json={"current_password": "engpass123", "new_password": "a-new-long-password"},
+    )
+    assert client.get("/api/auth/me").status_code == 200  # this browser got a fresh cookie
+    client.cookies.clear()
+    assert client.get("/api/auth/me", headers={"Authorization": f"Bearer {old_token}"}).status_code == 401
