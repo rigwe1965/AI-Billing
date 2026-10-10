@@ -10,6 +10,8 @@ from app.schemas.common import CsvImportResult
 
 router = APIRouter(prefix="/api/usage", tags=["usage"])
 
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+
 
 @router.post("/import-csv", response_model=CsvImportResult)
 async def import_csv(
@@ -17,7 +19,9 @@ async def import_csv(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    content = await file.read()
+    content = await file.read(MAX_UPLOAD_BYTES + 1)
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(413, f"CSV exceeds the {MAX_UPLOAD_BYTES // (1024 * 1024)} MB limit")
     try:
         usage_records = parse_csv(
             db, content, source_reference=file.filename or "upload.csv", imported_by=current_user

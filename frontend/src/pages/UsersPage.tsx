@@ -66,7 +66,7 @@ export function UsersPage() {
           </label>
           <label style={fieldLabel}>
             Password
-            <input required type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+            <input required type="password" minLength={12} maxLength={72} autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
           </label>
           <label style={fieldLabel}>
             Role

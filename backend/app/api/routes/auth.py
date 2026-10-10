@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
+from app.core import rate_limit
 from app.core.config import settings
 from app.core.deps import get_current_user, get_db
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import create_access_token, hash_password, verify_dummy_password, verify_password
 from app.models.user import User
 from app.schemas.auth import ChangePasswordRequest, LoginRequest, UserOut
 
@@ -13,10 +14,18 @@ COOKIE_NAME = "access_token"
 
 
 @router.post("/login", response_model=UserOut)
-def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)):
+def login(payload: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)):
+    ip = request.client.host if request.client else "unknown"
+    if rate_limit.is_blocked(payload.email, ip):
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Too many failed login attempts. Try again later.")
+
     user = db.query(User).filter(User.email == payload.email, User.is_active.is_(True)).first()
+    if user is None:
+        verify_dummy_password(payload.password)
     if user is None or not verify_password(payload.password, user.hashed_password):
+        rate_limit.record_failure(payload.email, ip)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Incorrect email or password")
+    rate_limit.reset(payload.email, ip)
 
     token = create_access_token(subject=user.email)
     response.set_cookie(

@@ -7,6 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core import rate_limit
 from app.core.deps import get_db
 from app.db.base import Base
 from app.main import app
@@ -19,6 +20,7 @@ from app.core.security import hash_password
 
 @pytest.fixture()
 def client():
+    rate_limit.clear_all()
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -228,3 +230,40 @@ def test_change_password_success_swaps_credentials(client):
     client.post("/api/auth/logout")
     assert client.post("/api/auth/login", json={"email": "englead@test-org.com", "password": "engpass123"}).status_code == 401
     login(client, "englead@test-org.com", "a-new-long-password")
+
+
+def test_login_is_throttled_after_repeated_failures(client):
+    for _ in range(rate_limit.MAX_FAILURES):
+        r = client.post("/api/auth/login", json={"email": "englead@test-org.com", "password": "wrong"})
+        assert r.status_code == 401
+    blocked = client.post("/api/auth/login", json={"email": "englead@test-org.com", "password": "engpass123"})
+    assert blocked.status_code == 429
+
+
+def test_create_user_rejects_short_password(client):
+    login(client, "admin@test-org.com", "adminpass123")
+    r = client.post("/api/users", json={"email": "x@test-org.com", "password": "short", "role": "admin_finance"})
+    assert r.status_code == 422
+
+
+def test_csv_upload_over_limit_is_rejected(client):
+    from app.api.routes import usage
+
+    login(client, "englead@test-org.com", "engpass123")
+    big = b"a" * (usage.MAX_UPLOAD_BYTES + 1)
+    r = client.post("/api/usage/import-csv", files={"file": ("big.csv", big, "text/csv")})
+    assert r.status_code == 413
+
+
+def test_insights_question_length_is_capped(client):
+    login(client, "englead@test-org.com", "engpass123")
+    r = client.post("/api/insights/ask", json={"question": "x" * 2001})
+    assert r.status_code == 422
+
+
+def test_excel_export_escapes_formula_cells():
+    from app.services.report_service import _cell
+
+    assert _cell("=HYPERLINK(\"http://evil\")") == "'=HYPERLINK(\"http://evil\")"
+    assert _cell("@SUM(1)") == "'@SUM(1)"
+    assert _cell("claude-sonnet") == "claude-sonnet"

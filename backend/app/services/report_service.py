@@ -24,6 +24,15 @@ from app.services.budget_engine import current_spend_for_budget
 from app.services.costing_engine import live_cost_line_items
 
 
+def _cell(value):
+    """Neutralizes spreadsheet formula injection: openpyxl stores a string that
+    starts with = as a formula, and +, -, @ (and tab/CR) are treated the same by
+    Excel. Usage CSVs are user-supplied, so every text cell is escaped."""
+    if isinstance(value, str) and value[:1] in ("=", "+", "-", "@", chr(9), chr(13)):
+        return "'" + value
+    return value
+
+
 def _summary_rows(db: Session, department_id: int | None):
     query = (
         live_cost_line_items(db)
@@ -91,7 +100,9 @@ def build_excel_report(db: Session, department_id: int | None = None) -> bytes:
     for cell in summary_ws[1]:
         cell.font = header_font
     for row in _summary_rows(db, department_id):
-        summary_ws.append([row.period, row.department or "(unallocated)", row.provider, float(row.total_amount), row.currency])
+        summary_ws.append(
+            [_cell(row.period), _cell(row.department or "(unallocated)"), _cell(row.provider), float(row.total_amount), _cell(row.currency)]
+        )
 
     detail_ws = wb.create_sheet("Detail")
     detail_headers = [
@@ -106,12 +117,12 @@ def build_excel_report(db: Session, department_id: int | None = None) -> bytes:
         detail_ws.append(
             [
                 row.period_start.isoformat(),
-                row.provider,
-                row.department or "(unallocated)",
-                row.sku_code,
+                _cell(row.provider),
+                _cell(row.department or "(unallocated)"),
+                _cell(row.sku_code),
                 float(row.quantity),
                 float(row.computed_amount) if row.computed_amount is not None else None,
-                row.currency,
+                _cell(row.currency),
                 row.allocation_method.value,
                 row.source_type.value,
                 row.pricing_rate_id,
