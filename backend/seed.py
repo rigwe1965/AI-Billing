@@ -4,6 +4,7 @@ Safe to re-run — skips rows that already exist by unique code/email.
 """
 
 import os
+import secrets
 
 from app.core.security import hash_password
 from app.db.session import SessionLocal
@@ -25,7 +26,9 @@ STARTER_DEPARTMENTS = [
 ]
 
 ADMIN_EMAIL = os.environ.get("ADMIN_INITIAL_EMAIL", "admin@ai-billing.app")
-ADMIN_PASSWORD = os.environ.get("ADMIN_INITIAL_PASSWORD", "changeme123")
+# No well-known default: if ADMIN_INITIAL_PASSWORD is unset, a random one is
+# generated and printed once when the admin is created.
+ADMIN_PASSWORD = os.environ.get("ADMIN_INITIAL_PASSWORD") or secrets.token_urlsafe(16)
 
 
 def seed():
@@ -51,7 +54,7 @@ def seed():
                 )
             )
             db.commit()
-            print(f"Created initial admin user: {ADMIN_EMAIL} (change the password after first login)")
+            print(f"Created initial admin user: {ADMIN_EMAIL} / {ADMIN_PASSWORD}  (shown once -- store it now)")
 
         print("Seed complete.")
     finally:

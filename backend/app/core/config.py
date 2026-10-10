@@ -1,3 +1,7 @@
+import logging
+import secrets
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -6,7 +10,11 @@ class Settings(BaseSettings):
 
     app_name: str = "AI Spend Management"
     database_url: str = "sqlite:///./ai_billing.db"
-    secret_key: str = "dev-only-change-me"
+    # JWT signing key. Set SECRET_KEY (32+ chars) in backend/.env for any real
+    # deployment. If it is unset or too short, a random per-process key is
+    # generated instead: sessions then end on restart, but a publicly known
+    # default can never be used to forge an admin token.
+    secret_key: str = ""
     access_token_expire_minutes: int = 60 * 12
 
     # Provider connector credentials -- all optional; a connector whose
@@ -22,6 +30,16 @@ class Settings(BaseSettings):
     google_bigquery_project: str | None = None
     google_bigquery_billing_dataset: str | None = None
     google_application_credentials: str | None = None  # path to service account JSON
+
+    @field_validator("secret_key")
+    @classmethod
+    def _require_strong_secret_key(cls, v: str) -> str:
+        if len(v) < 32 or v == "dev-only-change-me":
+            logging.getLogger(__name__).warning(
+                "SECRET_KEY is unset or weak; using a random ephemeral key (sessions reset on restart)."
+            )
+            return secrets.token_urlsafe(48)
+        return v
 
 
 settings = Settings()

@@ -20,9 +20,9 @@ python load_pricing_configs.py  # seeds current-generation model pricing (see be
 uvicorn app.main:app --reload --port 8000
 ```
 
-The seed script prints the initial admin email/password (defaults to
-`admin@ai-billing.app` / `changeme123` unless `ADMIN_INITIAL_EMAIL` /
-`ADMIN_INITIAL_PASSWORD` env vars are set) — log in and change it, then create
+The seed script creates `admin@ai-billing.app` (override with `ADMIN_INITIAL_EMAIL` /
+`ADMIN_INITIAL_PASSWORD`) and, if no password is given, prints a random one **once**.
+Set `SECRET_KEY` (32+ chars) in `backend/.env` for any real deployment. Then create
 real users via `POST /api/users` (admin_finance only).
 
 ## Auth
