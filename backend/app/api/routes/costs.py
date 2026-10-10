@@ -2,13 +2,14 @@ from sqlalchemy import func
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.core.deps import department_scope, get_db
+from app.core.deps import department_scope, get_db, require_admin
 from app.models.cost_line_item import CostLineItem
 from app.models.department import Department
 from app.models.provider import Provider
 from app.models.usage_record import UsageRecord
 from app.schemas.common import CostSummaryRow, UnpricedUsageRow
-from app.services.costing_engine import live_cost_line_items
+from app.services.budget_engine import evaluate_all_active_budgets
+from app.services.costing_engine import live_cost_line_items, reprice_usage_record
 
 router = APIRouter(prefix="/api/costs", tags=["costs"])
 
@@ -111,3 +112,27 @@ def needs_allocation_usage(db: Session = Depends(get_db), scope_department_id: i
         )
         for cli, ur, provider in rows
     ]
+
+
+@router.post("/reprocess-unpriced", dependencies=[Depends(require_admin)])
+def reprocess_unpriced(db: Session = Depends(get_db)):
+    """Re-derives cost line items for every live usage_record currently stuck
+    as needs_pricing_rule, using whatever pricing_rates exist now. Useful
+    after adding a rate that should retroactively cover older usage -- the
+    allocation equivalent of POST /api/allocations/reprocess-unallocated."""
+    stuck_usage_record_ids = {
+        row[0]
+        for row in live_cost_line_items(db)
+        .filter(CostLineItem.needs_pricing_rule.is_(True))
+        .with_entities(CostLineItem.usage_record_id)
+        .all()
+    }
+    resolved_count = 0
+    for usage_record_id in stuck_usage_record_ids:
+        usage_record = db.query(UsageRecord).filter(UsageRecord.id == usage_record_id).first()
+        new_items = reprice_usage_record(db, usage_record)
+        if not any(li.needs_pricing_rule for li in new_items):
+            resolved_count += 1
+
+    evaluate_all_active_budgets(db)
+    return {"checked": len(stuck_usage_record_ids), "resolved": resolved_count}

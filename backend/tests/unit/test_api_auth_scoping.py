@@ -106,6 +106,12 @@ def test_dept_lead_cannot_create_pricing_rate(client):
     assert resp.status_code == 403
 
 
+def test_dept_lead_cannot_reprocess_unpriced(client):
+    login(client, "englead@test-org.com", "engpass123")
+    resp = client.post("/api/costs/reprocess-unpriced")
+    assert resp.status_code == 403
+
+
 def test_dept_lead_csv_import_rejects_other_departments_code(client, tmp_path):
     login(client, "englead@test-org.com", "engpass123")
     csv_path = tmp_path / "bad.csv"
@@ -153,3 +159,47 @@ def test_dept_lead_never_sees_other_departments_cost_summary(client, tmp_path):
     mkt_summary = client.get("/api/costs/summary").json()
     assert {row["department"] for row in mkt_summary} == {"Marketing"}
     assert mkt_summary[0]["total_amount"] == "3.0000"
+
+
+def test_reprocess_unpriced_resolves_usage_once_a_matching_rate_exists(client, tmp_path):
+    login(client, "admin@test-org.com", "adminpass123")
+
+    # This sku has no pricing_rate yet, so it lands in needs-pricing limbo.
+    csv_path = tmp_path / "unpriced.csv"
+    csv_path.write_text(
+        "provider_code,sku_code,quantity,unit,period_start,period_end,department_code\n"
+        "anthropic,claude-sonnet-output-tokens,500000,tokens,2026-01-05,2026-01-05,ENG\n"
+    )
+    with open(csv_path, "rb") as f:
+        resp = client.post("/api/usage/import-csv", files={"file": ("unpriced.csv", f, "text/csv")})
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["needs_pricing_rule_count"] == 1
+    assert len(client.get("/api/costs/unpriced").json()) == 1
+
+    # Adding the rate alone doesn't retroactively fix the already-created line item.
+    resp = client.post(
+        "/api/pricing",
+        json={
+            "provider_code": "anthropic",
+            "sku_code": "claude-sonnet-output-tokens",
+            "unit": "per_1m_tokens",
+            "rate_amount": "15.00",
+            "effective_from": "2026-01-01",
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    assert len(client.get("/api/costs/unpriced").json()) == 1
+
+    # Reprocessing re-derives it using the now-active rate.
+    resp = client.post("/api/costs/reprocess-unpriced")
+    assert resp.status_code == 200, resp.text
+    assert resp.json() == {"checked": 1, "resolved": 1}
+
+    assert client.get("/api/costs/unpriced").json() == []
+    summary = client.get("/api/costs/summary").json()
+    eng_row = next(r for r in summary if r["department"] == "Engineering")
+    assert eng_row["total_amount"] == "7.5000"  # 500,000 / 1,000,000 * $15.00
+
+    # Idempotent: nothing left to reprocess on a second call.
+    resp = client.post("/api/costs/reprocess-unpriced")
+    assert resp.json() == {"checked": 0, "resolved": 0}

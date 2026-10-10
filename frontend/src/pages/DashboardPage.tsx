@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "../api/client";
+import { api, ApiError } from "../api/client";
 import type { BudgetStatus, CostSummaryRow, UnpricedUsageRow } from "../api/types";
 import { Card } from "../components/ui/Card";
 import { StatTile } from "../components/ui/StatTile";
@@ -15,8 +15,10 @@ export function DashboardPage() {
   const [needsAllocation, setNeedsAllocation] = useState<UnpricedUsageRow[]>([]);
   const [budgetStatus, setBudgetStatus] = useState<BudgetStatus[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [reprocessing, setReprocessing] = useState(false);
 
-  useEffect(() => {
+  function refresh() {
     Promise.all([
       api.get<CostSummaryRow[]>("/api/costs/summary"),
       api.get<UnpricedUsageRow[]>("/api/costs/unpriced"),
@@ -30,7 +32,24 @@ export function DashboardPage() {
         setBudgetStatus(b);
       })
       .catch((err) => setError(err.message));
-  }, []);
+  }
+
+  useEffect(refresh, []);
+
+  async function reprocessUnpriced() {
+    setError(null);
+    setMessage(null);
+    setReprocessing(true);
+    try {
+      const res = await api.post<{ checked: number; resolved: number }>("/api/costs/reprocess-unpriced");
+      setMessage(`Checked ${res.checked} record(s), resolved ${res.resolved}.`);
+      refresh();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed");
+    } finally {
+      setReprocessing(false);
+    }
+  }
 
   if (error) return <div style={{ color: "var(--status-critical)" }}>{error}</div>;
   if (summary === null) return <div style={{ color: "var(--text-muted)" }}>Loading...</div>;
@@ -65,10 +84,19 @@ export function DashboardPage() {
 
       {(unpriced.length > 0 || needsAllocation.length > 0) && (
         <Card title="Needs attention" style={{ borderColor: "var(--status-warning)" }}>
+          {message && <p style={{ margin: "0 0 8px", fontSize: 13, color: "var(--status-good)" }}>{message}</p>}
           {unpriced.length > 0 && (
             <p style={{ margin: "0 0 8px", fontSize: 13 }}>
               <strong>{unpriced.length}</strong> usage record(s) have no pricing rule configured -- their cost is
               not counted in totals above until a rate is added under Pricing Rates.
+              {user?.role === "admin_finance" && (
+                <>
+                  {" "}
+                  <button onClick={reprocessUnpriced} disabled={reprocessing} style={{ fontSize: 12, cursor: "pointer" }}>
+                    {reprocessing ? "Checking..." : "Re-check against current pricing rates"}
+                  </button>
+                </>
+              )}
             </p>
           )}
           {needsAllocation.length > 0 && (
