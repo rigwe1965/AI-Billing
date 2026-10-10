@@ -68,6 +68,9 @@ export function Layout({ children }: { children: ReactNode }) {
         <div style={{ marginTop: "auto", paddingTop: 16, borderTop: "1px solid var(--border)", fontSize: 12 }}>
           <div style={{ color: "var(--text-secondary)" }}>{user?.email}</div>
           <div style={{ color: "var(--text-muted)", marginBottom: 8 }}>{user?.role}</div>
+          <NavLink to="/account" style={linkStyle}>
+            Change password
+          </NavLink>
           <button onClick={logout} style={{ fontSize: 12, padding: "4px 8px", cursor: "pointer" }}>
             Log out
           </button>

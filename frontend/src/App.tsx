@@ -11,6 +11,7 @@ import { UsersPage } from "./pages/UsersPage";
 import { BudgetsPage } from "./pages/BudgetsPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { InsightsPage } from "./pages/InsightsPage";
+import { AccountPage } from "./pages/AccountPage";
 import type { ReactNode } from "react";
 
 function ProtectedRoute({ children, adminOnly = false }: { children: ReactNode; adminOnly?: boolean }) {
@@ -32,6 +33,7 @@ function AppRoutes() {
       <Route path="/budgets" element={<ProtectedRoute><BudgetsPage /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
       <Route path="/insights" element={<ProtectedRoute><InsightsPage /></ProtectedRoute>} />
+      <Route path="/account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
       <Route path="/pricing" element={<ProtectedRoute adminOnly><PricingPage /></ProtectedRoute>} />
       <Route path="/allocations" element={<ProtectedRoute adminOnly><AllocationsPage /></ProtectedRoute>} />
       <Route path="/connectors" element={<ProtectedRoute adminOnly><ConnectorsPage /></ProtectedRoute>} />

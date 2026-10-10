@@ -203,3 +203,28 @@ def test_reprocess_unpriced_resolves_usage_once_a_matching_rate_exists(client, t
     # Idempotent: nothing left to reprocess on a second call.
     resp = client.post("/api/costs/reprocess-unpriced")
     assert resp.json() == {"checked": 0, "resolved": 0}
+
+
+def test_change_password_requires_auth(client):
+    resp = client.post("/api/auth/change-password", json={"current_password": "x", "new_password": "a-new-long-password"})
+    assert resp.status_code == 401
+
+
+def test_change_password_rejects_wrong_current_and_short_new(client):
+    login(client, "englead@test-org.com", "engpass123")
+    bad = client.post("/api/auth/change-password", json={"current_password": "nope", "new_password": "a-new-long-password"})
+    assert bad.status_code == 400
+    short = client.post("/api/auth/change-password", json={"current_password": "engpass123", "new_password": "short"})
+    assert short.status_code == 422
+
+
+def test_change_password_success_swaps_credentials(client):
+    login(client, "englead@test-org.com", "engpass123")
+    resp = client.post(
+        "/api/auth/change-password",
+        json={"current_password": "engpass123", "new_password": "a-new-long-password"},
+    )
+    assert resp.status_code == 200
+    client.post("/api/auth/logout")
+    assert client.post("/api/auth/login", json={"email": "englead@test-org.com", "password": "engpass123"}).status_code == 401
+    login(client, "englead@test-org.com", "a-new-long-password")
